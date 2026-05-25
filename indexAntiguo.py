@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
 
 # Tasa max de crecimiento tumoral (dia-1)
 a = 0.18
@@ -61,10 +62,10 @@ def rk4(f, h, xi, yi, xFin):
     while x < xFin:
         if x + h > xFin:
             h = xFin - x
-        k1 = f(x,       y)
+        k1 = f(x,y)
         k2 = f(x + h/2, y + h/2 * k1)
         k3 = f(x + h/2, y + h/2 * k2)
-        k4 = f(x + h,   y + h   * k3)
+        k4 = f(x + h,y + h * k3)
         y = y + (h/6) * (k1 + 2*k2 + 2*k3 + k4)
         x = x + h
         xout.append(x)
@@ -72,23 +73,20 @@ def rk4(f, h, xi, yi, xFin):
     return xout, yout
 
 
-# Parámetros iniciales generados con IA para validar los métodos numéricos
-
-# Caso 1: tumor pequeño → sistema inmune lo controla → dormancia
 # Condiciones iniciales
 E0 = 3.3e5
 T0 = 1e6
 yi = [E0, T0]
 
-# Parámetros de simulación
-xi  = 0      # día inicial
-xFin = 365   # un año
-h = 0.5      # paso de medio día
+# Parametros de simulación
+xi  = 0      
+xFin = 365   
+h = 0.5 
 
-# Correr los tres métodos
-tiempoEuler,  solucionEuler  = euler(sistema, h, xi, yi, xFin)
-tiempoEulerMejorado,   solucionEulerMejorado   = eulerMejorado(sistema, h, xi, yi, xFin)
-tiempoRK4,    solucionRK4    = rk4(sistema, h, xi, yi, xFin)
+# Correr los tres metodos
+tiempoEuler, solucionEuler  = euler(sistema, h, xi, yi, xFin)
+tiempoEulerMejorado, solucionEulerMejorado   = eulerMejorado(sistema, h, xi, yi, xFin)
+tiempoRK4, solucionRK4 = rk4(sistema, h, xi, yi, xFin)
 
 print("Tiempo final:", tiempoRK4[-1])
 
@@ -104,13 +102,11 @@ print("T final RK4:", solucionRK4[-1][1])
 
 
 # Validacion con scipy
-from scipy.integrate import solve_ivp
+solucionReferencia = solve_ivp(sistema, [xi, xFin], yi, method='RK45', max_step=0.5)
 
-sol_ref = solve_ivp(sistema, [xi, xFin], yi, method='RK45', max_step=0.5)
-
-print("E final RK45:", sol_ref.y[0][-1])
-print("T final RK45:", sol_ref.y[1][-1])
+print("E final RK45:", solucionReferencia.y[0][-1])
+print("T final RK45:", solucionReferencia.y[1][-1])
 
 # Diferencia entre RK4 casero y RK45 de scipy
-print("Diferencia E final RK4 vs RK45:",(solucionRK4[-1][0] - sol_ref.y[0][-1]))
-print("Diferencia T final RK4 vs RK45:",(solucionRK4[-1][1] - sol_ref.y[1][-1]))
+print("Diferencia E final RK4 vs RK45:",(solucionRK4[-1][0] - solucionReferencia.y[0][-1]))
+print("Diferencia T final RK4 vs RK45:",(solucionRK4[-1][1] - solucionReferencia.y[1][-1]))
